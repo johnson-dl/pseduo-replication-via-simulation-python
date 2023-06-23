@@ -1,0 +1,97 @@
+---
+title: "Checking power of statistical models"
+output: html_document
+---
+
+```{r}
+library(reticulate)
+```
+
+
+```{python}
+#Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+
+#generate normally distributed variable
+mu, sigma = 0, 1
+x = np.random.normal(mu, sigma, 58)
+x
+```
+
+
+```{python}
+#set beta and standard error values for regression model
+b0, b1, se = 25, - 13.73, .76
+
+#create y variable based off regression formula. se value adds noise to our model
+n = len(x)
+y = b0 + b1*x + np.random.normal(mu, se, n)
+y
+```
+
+
+```{python}
+plt.scatter(x,y)
+plt.show()
+```
+
+```{python}
+#create function to simulate a dataset based off values of interest
+
+def simulate_data(n, b0, b1, residual_se):
+  x = np.random.normal(0,1,n)
+  sim_df = pd.DataFrame(x, columns = ["x"])
+  sim_df["y"] = b0 +  b1*sim_df["x"] + np.random.normal(0, residual_se)
+  return(sim_df)
+
+
+#test function
+simulate_data(n = 58, b0 = 25, b1 = -13.73, residual_se = 76)
+```
+
+```{python}
+p_values = []
+
+for dataset in range(100):
+  data_simulated = simulate_data(n = 58, b0 = 25, b1 = -13.73, residual_se = .76)
+  sim_model = sm.OLS(data_simulated["y"], data_simulated["x"]).fit()
+  p_values.append(sim_model.pvalues[0] < 0.05)
+
+```
+
+
+```{python}
+p_values
+```
+
+```{python}
+
+sum(p_values) / len(p_values)
+
+```
+
+
+```{python}
+#create larger function that incorporates number of simulations
+
+def simulate_power(n_sims, n, b0, b1, residual_se):
+  
+  pvals = []
+  
+  for dataset in range(n_sims):
+    data_simulated = simulate_data(n = 58, b0 = 25, b1 = -13.73, residual_se = .76)
+    sim_model = sm.OLS(data_simulated["y"], data_simulated["x"]).fit()
+    pvals.append(sim_model.pvalues[0] < 0.05)
+  
+  power = sum(pvals) / len(pvals)
+  return(power)
+```
+
+
+```{python}
+simulate_power(n_sims = 1000, n = 58, b0 = 25, b1 = -13.73, residual_se = .76)
+```
+
